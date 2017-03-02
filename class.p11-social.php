@@ -12,24 +12,27 @@
 
 class P11_SOCIAL  {
 
-  private static $initiated = false;
+  private $initiated = false;
+  private $fbIsAuthenticated = true;
+  private $twitterIsAuthenticated = true;
+  private $config;
 
   /*
   *
   * Initializes the instance of P11_SOCIAL
   *
   */
-
-  public static function init() {
-
-    if ( !self::$initiated ) {
-      self::init_hooks();
+  public function __construct() {
+    
+    // Initiate if not already
+    if( !$this->initiated ) {
+      $this->initiated = true;
+      $this->init_hooks();
       require_once P11_SOCIAL_PLUGIN_DIR . '/includes/php-graph-sdk-5.0.0/src/Facebook/autoload.php';
       require_once P11_SOCIAL_PLUGIN_DIR . '/includes/TwitterAPIExchange/TwitterAPIExchange.php';
       require_once P11_SOCIAL_PLUGIN_DIR . '/class.p11-social-config.php';
       require_once P11_SOCIAL_PLUGIN_DIR . '/class.post-to-twitter.php';
       require_once P11_SOCIAL_PLUGIN_DIR . '/class.post-to-facebook.php';
-
     }
 
     // checking if session already exists
@@ -44,12 +47,12 @@ class P11_SOCIAL  {
   *
   */
 
-  public static function init_hooks() {
-    self::$initiated = true;
-    add_action( 'admin_menu', array( 'P11_SOCIAL', 'p11_social_admin_menu' ));
-    add_action( 'admin_init', array( 'P11_SOCIAL', 'p11_social_settings' ));
-    add_action( 'admin_init', array( 'P11_SOCIAL', 'set_globals' ));
-    add_action( 'publish_post', array( 'P11_SOCIAL', 'get_last_post' ));
+  public function init_hooks() {
+    add_action( 'admin_menu', array( $this, 'p11_social_admin_menu' ));
+    add_action( 'admin_init', array( $this, 'p11_social_settings' ));
+    add_action( 'admin_init', array( $this, 'set_globals' ));
+    add_action( 'publish_post', array( $this, 'get_last_post' ));
+    add_action( 'admin_notices', array( $this, 'admin_notice_error' ));
   }
 
   /*
@@ -58,13 +61,13 @@ class P11_SOCIAL  {
   *
   */
 
-  public static function p11_social_admin_menu() {
+  public function p11_social_admin_menu() {
     add_options_page(
     'P11 Social',
     'P11 Social',
     'manage_options',
     'p11-social-settings',
-    array( 'P11_SOCIAL', 'p11_social_settings_page' )
+    array( $this, 'p11_social_settings_page' )
   );
 }
 
@@ -77,12 +80,13 @@ class P11_SOCIAL  {
 *
 */
 
-public static function set_globals() {
-  $_SESSION['site_url'] = P11_SOCIAL_CONFIG::getSiteURL();
-  $_SESSION['fb_app_id'] = P11_SOCIAL_CONFIG::getFBAppID();
-  $_SESSION['fb_app_secret'] = P11_SOCIAL_CONFIG::getFBAppSecret();
-  $_SESSION['fb_page_id'] = P11_SOCIAL_CONFIG::getFBPageId();
-
+public function set_globals() {
+  $this->config = new P11_SOCIAL_CONFIG();
+  $_SESSION['site_url'] = $this->config->getSiteURL();
+  $_SESSION['fb_app_id'] = $this->config->getFBAppID();
+  $_SESSION['fb_app_secret'] = $this->config->getFBAppSecret();
+  $_SESSION['fb_page_id'] = $this->config->getFBPageId();
+  
   $_SESSION['twitter_oauth_access_token'] = get_option('twitter_oauth_access_token');
   $_SESSION['twitter_oauth_access_token'] = get_option('twitter_oauth_access_token_secret');
   $_SESSION['twitter_consumer_key'] = get_option('twitter_consumer_key');
@@ -95,7 +99,7 @@ public static function set_globals() {
 * Construct and Render The Settings Page
 *
 */
-public static function p11_social_settings_page() {
+public function p11_social_settings_page() {
   ?>
 
   <div class="wrap">
@@ -131,8 +135,10 @@ public static function p11_social_settings_page() {
 
       <table class="form-table">
         <h1>Facebook API</h1>
-
-        <?php self::checkForValidAccessToken(); ?>
+        <?php var_dump($_SESSION); ?>
+        <?php if( get_option('facebook_access_token') ) :?>
+          <?php $this->checkForValidAccessToken(); ?>
+        <?php endif;?>
 
           <tr valign="top">
             <th scope="row">Facebook App ID</th>
@@ -169,7 +175,7 @@ public static function p11_social_settings_page() {
   *
   */
 
-  public static function p11_social_settings() {
+  public function p11_social_settings() {
     // Set Twitter Settings
     register_setting( 'p11-social-settings-group', 'twitter_oauth_access_token' );
     register_setting( 'p11-social-settings-group', 'twitter_oauth_access_token_secret' );
@@ -190,11 +196,12 @@ public static function p11_social_settings_page() {
   *
   */
 
-  public static function checkForValidAccessToken() {
-
+  public function checkForValidAccessToken() {
+    var_dump($_SESSION);
     if( get_option('facebook_access_token') ) {
       $_SESSION['fb_access_token'] = P11_SOCIAL_CONFIG::getFBAccessToken();
       var_dump($_SESSION);
+      echo '<h2>You are logged in and authenticated with Facebook.</h2>';
     }
 
     elseif( !isset($_SESSION['fb_access_token']) ) {
@@ -213,20 +220,46 @@ public static function p11_social_settings_page() {
 
         echo '<a href="' . htmlspecialchars($loginUrl) . '">Log in with Facebook!</a>';
 
-
     }
 
   }
 
   /*
   *
-  * Function gets called when user publishes a new blog posts
-  * and gets the data from that last blog post published.
-  * TODO: Think about moving this to a post class
+  * Displays admin notices for weather or not you are authenticated with the social media's
   *
   */
 
-  public static function get_last_post() {
+  public function admin_notice_error() {
+
+    if( $this->fbIsAuthenticated ) {
+      $class = 'notice notice-success is-dismissible';
+      $message1 = __( 'Your are authorized with Facebook.', 'sample-text-domain' );
+    } else {
+      $class = 'notice notice-error is-dismissible';
+      $message1 = __( 'Please authorize your Facebook App.', 'sample-text-domain' );
+    }
+
+    if( $this->twitterIsAuthenticated ) {
+      $class = 'notice notice-success is-dismissible';
+      $message2 = __( 'You are authrorized with Twitter.', 'sample-text-domain' );
+    } else {
+      $class = 'notice notice-error is-dismissible';
+      $message2 = __( 'Please authorize your Twitter App.', 'sample-text-domain' );
+    }
+	
+	printf( '<div class="%1$s"><p>%2$s</p></div>', $class, $message1 ); 
+  printf( '<div class="%1$s"><p>%2$s</p></div>', $class, $message2 ); 
+}
+
+  /*
+  *
+  * Function gets called when user publishes a new blog posts
+  * and gets the data from that last blog post published.
+  *
+  */
+
+  public function get_last_post() {
     $args = array(
       'numberposts' => 1,
       'offset' => 0,
@@ -244,7 +277,6 @@ public static function p11_social_settings_page() {
 
     $recent_post = wp_get_recent_posts( $args, ARRAY_A );
 
-    // var_dump($recent_post);
     foreach ($recent_post as $post ) {
       $postID = $post['ID'];
       $postURL = $post['guid'];
@@ -252,106 +284,14 @@ public static function p11_social_settings_page() {
         $postImage = the_post_thumbnail();
       }
     }
-    // var_dump($postID);
+
     $imageArr = wp_get_attachment_image_src( get_post_thumbnail_id( $postID ), 'single-post-thumbnail' );
     $image = $imageArr[0];
 
-    // TODO: Make a post to social class
-    self::post_to_twitter($recent_post, $postID, $postURL);
-    self::post_to_facebook($recent_post, $postID, $postURL, $postImage);
-  }
-
-
-  /*
-  *
-  * Function gets called when user publishes a new blog post
-  * and gets the data of the last post and posts to Twitter
-  * TODO: move this to a post class
-  *
-  */
-  public static function post_to_twitter($recent_post, $postID, $postURL) {
-
-    $twitter_settings = array(
-      'oauth_access_token' => P11_SOCIAL_CONFIG::getTwitterAccessToken(),
-      'oauth_access_token_secret' => P11_SOCIAL_CONFIG::getTwitterAccessTokenSecret(),
-      'consumer_key' => P11_SOCIAL_CONFIG::getTwitterConsumerKey(),
-      'consumer_secret' => P11_SOCIAL_CONFIG::getTwitterConsumerSecret()
-    );
-
-    // Brings the post content down to 140 characters for twitter standards if it is more than that.
-    $twitterPost = self::truncate($recent_post[0]['post_content'], 140);
-    // $twitterPost = substr($recent_post[0]['post_content'], 0, $twitterPost );
-
-    $url = 'https://api.twitter.com/1.1/statuses/update.json';
-    $requestMethod = 'POST';
-    $postfields = array(
-      'status' => $twitterPost,
-      'skip_status' => '1'
-    );
-
-    $twitter = new TwitterAPIExchange($twitter_settings);
-    echo $twitter->buildOauth($url, $requestMethod)
-    ->setPostfields($postfields)
-    ->performRequest();
-
-  }
-
-  public static function truncate($text, $length) {
-   $length = abs((int)$length);
-   if(strlen($text) > $length) {
-      $text = preg_replace("/^(.{1,$length})(\s.*|$)/s", '\\1...', $text);
-   }
-   return($text);
-}
-
-  /*
-  *
-  * Function gets called when user publishes a new blog post
-  * and gets the data of the last post and posts to Facebook
-  * TODO: move this to a facebook post class
-  *
-  */
-  public static function post_to_facebook($recent_post, $postID, $postURL, $postImage) {
-    if( $_SESSION['fb_access_token'] ) {
-
-      $accessToken = $_SESSION['fb_access_token'];
-
-      // Start Authorization of Facebook API
-      $fb = new Facebook\Facebook([
-        'app_id' => P11_SOCIAL_CONFIG::getFBAppID(),
-        'app_secret' => P11_SOCIAL_CONFIG::getFBAppSecret(),
-        'default_graph_version' => 'v2.8',
-      ]);
-
-    	$params = array(
-        "message" => $recent_post[0]['post_content'],
-        "link" => $postURL,
-        "picture" => $postImage,
-    	);
-
-      $url = 'https://graph.facebook.com/me/accounts?access_token='. $accessToken;
-
-
-      // TODO: Move to a function within the facebook post class for cleaner code.
-      $response = wp_remote_get($url);
-      $jsonfile = file_get_contents($url);
-      $jsondata = json_decode($jsonfile);
-      $pageAccessToken = $jsondata->data[0]->access_token;
-
-    	$posturl = '/'.$_SESSION['fb_page_id'].'/feed';
-    	$result = $fb->post($posturl,$params,$pageAccessToken);
-      try {
-        $result = $fb->post($posturl,$params,$pageAccessToken);
-      } catch(Facebook\Exceptions\FacebookResponseException $e) {
-        // When Graph returns an error
-        echo 'Graph returned an error: ' . $e->getMessage();
-        exit;
-      } catch(Facebook\Exceptions\FacebookSDKException $e) {
-        // When validation fails or other local issues
-        echo 'Facebook SDK returned an error: ' . $e->getMessage();
-        exit;
-      }
-    }
+    // TODO: Add an option to allow people to check if they want to send posts then do a check here before posting
+    $post_to_twitter = new Twitter_Post($recent_post, $postID, $postURL);
+    $post_to_facebook = new Facebook_Post($recent_post, $postID, $postURL, $postImage);
+    
   }
 
 }

@@ -24,40 +24,40 @@ class P11_SOCIAL_CONFIG {
         }
     }
 
-    public static function getSiteURL() {
+    public function getSiteURL() {
         return site_url();
     }
 
-    public static function getFBAppID() {
+    public function getFBAppID() {
         return get_option('facebook_app_id');
     }
 
 
-    public static function getFBAppSecret() {
+    public function getFBAppSecret() {
         return get_option('facebook_app_secret');
     }
 
-    public static function getFBPageId() {
+    public function getFBPageId() {
         return get_option('facebook_page_id');
     }
 
-    public static function getFBAccessToken() {
+    public function getFBAccessToken() {
         return get_option('facebook_access_token');
     }
 
-    public static function getTwitterAccessToken() {
+    public function getTwitterAccessToken() {
         return get_option('twitter_oauth_access_token');
     }
 
-    public static function getTwitterAccessTokenSecret() {
+    public function getTwitterAccessTokenSecret() {
         return get_option('twitter_oauth_access_token_secret');
     }
 
-    public static function getTwitterConsumerKey() {
+    public function getTwitterConsumerKey() {
         return get_option('twitter_consumer_key');
     }
 
-    public static function getTwitterConsumerSecret() {
+    public function getTwitterConsumerSecret() {
         return get_option('twitter_consumer_secret');
     }
 

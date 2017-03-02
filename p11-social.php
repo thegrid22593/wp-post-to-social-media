@@ -21,9 +21,6 @@ define( 'P11_SOCIAL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'P11_SOCIAL_PLUGIN_URL', plugin_dir_url('') . 'p11-social' );
 define( 'P11_SOCIAL_DELETE_LIMIT', 100000 );
 
-
 require_once( P11_SOCIAL_PLUGIN_DIR . 'class.p11-social.php' );
 
-
-add_action( 'init', array( 'P11_SOCIAL', 'init' ) );
-add_action( 'init', array( 'P11_SOCIAL_CONFIG', 'init' ) );
+$P11_SOCIAL = new P11_SOCIAL();
