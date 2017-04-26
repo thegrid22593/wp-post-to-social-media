@@ -1,4 +1,4 @@
-<?php
+<?php ob_start();
 
 /**
 *
@@ -15,14 +15,18 @@ class Twitter_Post  {
   protected $recent_post;
   protected $postID;
   protected $postURL;
+  protected $allowPost;
+  protected $twitterConfig;
 
   public function __construct($recent_post, $postID, $postURL) {
 
     $this->recent_post   = $recent_post;
     $this->postID        = $postID;
     $this->postURL       = $postURL;
-    $this->post_tweet();
-    
+    $this->twitterConfig = new P11_SOCIAL_CONFIG();
+    if($this->twitterConfig->allowTwitterPost() == "1") {
+      $this->post_tweet();
+    }
   }
 
   /*
@@ -36,19 +40,20 @@ class Twitter_Post  {
     $twitter_settings = $this->config();
 
     // Brings the post content down to 140 characters for twitter standards if it is more than that.
-    $validTwitterContent = $this->truncate_content($this->recent_post[0]['post_content'], 140);
+      $validTwitterContent = $this->truncate_content($this->recent_post[0]['post_content'], 140);
 
-    $url = 'https://api.twitter.com/1.1/statuses/update.json';
-    $requestMethod = 'POST';
-    $postfields = array(
-      'status' => $validTwitterContent,
-      'skip_status' => '1'
-    );
+      $url = 'https://api.twitter.com/1.1/statuses/update.json';
+      $requestMethod = 'POST';
+      $postfields = array(
+        'status' => $validTwitterContent,
+        'skip_status' => '1'
+      );
 
-    $twitter = new TwitterAPIExchange($twitter_settings);
-    echo $twitter->buildOauth($url, $requestMethod)
-    ->setPostfields($postfields)
-    ->performRequest();
+      $twitter = new TwitterAPIExchange($twitter_settings);
+      echo $twitter->buildOauth($url, $requestMethod)
+      ->setPostfields($postfields)
+      ->performRequest();
+
   }
 
   /*
@@ -67,17 +72,12 @@ class Twitter_Post  {
   }
 
   private function config() {
-    $twitterConfig = new P11_SOCIAL_CONFIG();
     return array(
-      'oauth_access_token' => $twitterConfig->getTwitterAccessToken(),
-      'oauth_access_token_secret' => $twitterConfig->getTwitterAccessTokenSecret(),
-      'consumer_key' => $twitterConfig->getTwitterConsumerKey(),
-      'consumer_secret' => $twitterConfig->getTwitterConsumerSecret()
+      'oauth_access_token' => $this->twitterConfig->getTwitterAccessToken(),
+      'oauth_access_token_secret' => $this->twitterConfig->getTwitterAccessTokenSecret(),
+      'consumer_key' => $this->twitterConfig->getTwitterConsumerKey(),
+      'consumer_secret' => $this->twitterConfig->getTwitterConsumerSecret()
     );
   }
-
-
 }
-
-
 ?>

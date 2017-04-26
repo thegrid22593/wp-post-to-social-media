@@ -45,6 +45,22 @@ class P11_SOCIAL_CONFIG {
         return get_option('facebook_access_token');
     }
 
+    public function allowFacebookPost() {
+        return get_option('allow_fb_post');
+    }
+
+    public function updateFacebookPostPermission($permission) {
+        update_option('allow_fb_post', $permission);
+    }
+
+    public function allowTwitterPost() {
+        return get_option('allow_twitter_post');
+    }
+
+    public function updateTwitterPostPermission($permission) {
+        update_option('allow_twitter_post', $permission);
+    }
+
     public function getTwitterAccessToken() {
         return get_option('twitter_oauth_access_token');
     }

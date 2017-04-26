@@ -1,4 +1,5 @@
-<?php session_start();
+<?php ob_start();
+session_start();
 define('__ROOT__', __DIR__);
 date_default_timezone_set('UTC');
 
@@ -12,7 +13,8 @@ require_once(__ROOT__.'/class.p11-social-config.php');
 $fb = new Facebook\Facebook([
   'app_id' => $_SESSION['fb_app_id'], // Replace {app-id} with your app id
   'app_secret' => $_SESSION['fb_app_secret'],
-  'default_graph_version' => 'v2.8',
+  'default_graph_version' => 'v2.9',
+  'persistent_data_handler'=> 'session'
   ]);
 
 $helper = $fb->getRedirectLoginHelper();
@@ -78,6 +80,7 @@ $_SESSION['fb_access_token'] = (string) $accessToken;
 
 // User is logged in with a long-lived access token.
 // You can redirect them to a members-only page.
+//header('Location: https://example.com/members.php');
 header('Location: '. $_SESSION['site_url'] . '/wp-admin/options-general.php?page=p11-social-settings');
 
 ?>
