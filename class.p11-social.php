@@ -108,13 +108,13 @@ public function p11_social_display_box( $post ) {
         <strong><label for="allow-facebook" class="prfx-row-title"><?php _e( 'Post to Facebook?', 'prfx-textdomain' )?></label></strong>
         <input type="radio" class="allowFacebook" name="allow-facebook" id="allow-facebook" value="yes" <?php if(get_option('allow_fb_post') == "1") : echo "checked"; endif; ?> />Yes
         <input type="radio" class="allowFacebook" name="allow-facebook" id="allow-facebook" value="no" <?php if(!get_option('allow_fb_post') == "1") : echo "checked"; endif; ?> />No
-        <?php var_dump(get_option('allow_fb_post'));?>
+        <!--<?php var_dump(get_option('allow_fb_post'));?>-->
         <br/>
         <br/>
         <strong><label for="allow-twitter" class="prfx-row-title"><?php _e( 'Post to Twitter?', 'prfx-textdomain' )?></label></strong>
         <input type="radio" class="allowTwitter" name="allow-twitter" id="allow-twitter" value="yes"<?php if(get_option('allow_twitter_post') == "1") : echo "checked"; endif; ?> />Yes
         <input type="radio" class="allowTwitter" name="allow-twitter" id="allow-twitter" value="no"<?php if(!get_option('allow_twitter_post') == "1") : echo "checked"; endif; ?> />No
-        <?php var_dump(get_option('allow_twitter_post'));?>
+        <!--<?php var_dump(get_option('allow_twitter_post'));?>-->
     </p>
 
   <?php
@@ -229,10 +229,9 @@ public function validate_credentials() { ?>
       $.getScript('//connect.facebook.net/en_US/sdk.js', function(){
         FB.init({
           appId: appID,
-          version: 'v2.8' // or v2.1, v2.2, v2.3, ...
+          version: 'v2.9' // or v2.7, v2.8, v2.9, ...
         });
         // $('#loginbutton,#feedbutton').removeAttr('disabled');
-        console.log('working');
         FB.getLoginStatus(function(response) {
           console.log(response);
           if(response.status === 'connected') {
@@ -267,10 +266,19 @@ public function set_globals() {
   $_SESSION['fb_app_secret'] = $this->config->getFBAppSecret();
   $_SESSION['fb_page_id'] = $this->config->getFBPageId();
 
+  // TODO: make this use config class
   $_SESSION['twitter_oauth_access_token'] = get_option('twitter_oauth_access_token');
   $_SESSION['twitter_oauth_access_token'] = get_option('twitter_oauth_access_token_secret');
   $_SESSION['twitter_consumer_key'] = get_option('twitter_consumer_key');
   $_SESSION['twitter_consumer_secret'] = get_option('twitter_consumer_secret');
+
+    // Check for Facebook Access Token
+  if( $_SESSION['fb_access_token'] == NULL && get_option('facebook_access_token') ) {
+    $_SESSION['fb_access_token'] = get_option('facebook_access_token');
+    $this->fbIsAuthenticated = true;
+  } else if($_SESSION['fb_access_token'] == NULL && !get_option('facebook_access_token') ) {
+    $this->fbIsAuthenticated = false;
+  }
 }
 
 /*
@@ -426,21 +434,26 @@ public function p11_social_settings_page() {
 
   public function admin_notice_error() {
 
-    if( $this->fbIsAuthenticated ) {
-      $class = 'notice notice-success is-dismissible';
-      $message1 = __( 'Your are authorized with Facebook.', 'sample-text-domain' );
-    } else {
-      $class = 'notice notice-error is-dismissible';
-      $message1 = __( 'Please authorize your Facebook App.', 'sample-text-domain' );
-    }
+    global $pagenow;
 
-    if( $this->twitterIsAuthenticated ) {
-      $class = 'notice notice-success is-dismissible';
-      $message2 = __( 'You are authrorized with Twitter.', 'sample-text-domain' );
-    } else {
-      $class = 'notice notice-error is-dismissible';
-      $message2 = __( 'Please authorize your Twitter App.', 'sample-text-domain' );
+    if($pagenow == 'options-general.php' || $pagenow == 'post.php') {
+      if( $this->fbIsAuthenticated ) {
+        $class = 'notice notice-success is-dismissible';
+        $message1 = __( 'Your are authorized with Facebook.', 'sample-text-domain' );
+      } else {
+        $class = 'notice notice-error is-dismissible';
+        $message1 = __( 'Please authorize your Facebook App. <a href=""/>Log In</a>', 'sample-text-domain' );
+      }
+
+      if( $this->twitterIsAuthenticated ) {
+        $class = 'notice notice-success is-dismissible';
+        $message2 = __( 'You are authrorized with Twitter.', 'sample-text-domain' );
+      } else {
+        $class = 'notice notice-error is-dismissible';
+        $message2 = __( 'Please authorize your Twitter App.', 'sample-text-domain' );
+      }
     }
+    
 
 	printf( '<div class="%1$s"><p>%2$s</p></div>', $class, $message1 );
   printf( '<div class="%1$s"><p>%2$s</p></div>', $class, $message2 );
@@ -475,12 +488,11 @@ public function p11_social_settings_page() {
       $postID = $post['ID'];
       $postURL = $post['guid'];
       if( has_post_thumbnail() ) {
-        $postImage = the_post_thumbnail();
+        $postImage = get_the_post_thumbnail_url();
+      } else {
+        $postImage;
       }
     }
-
-    $imageArr = wp_get_attachment_image_src( get_post_thumbnail_id( $postID ), 'single-post-thumbnail' );
-    $image = $imageArr[0];
 
     // TODO: Add an option to allow people to check if they want to send posts then do a check here before posting
     $post_to_twitter = new Twitter_Post($recent_post, $postID, $postURL);

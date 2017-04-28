@@ -41,22 +41,27 @@ class Facebook_Post  {
     public function postStatus() {
       if( $_SESSION['fb_access_token'] ) {
 
+        // Set Access Token
           $accessToken = $_SESSION['fb_access_token'];
 
         // Start Authorization of Facebook API
-
           $fb = new Facebook\Facebook([
             'app_id' => $this->fbConfig->getFBAppID(),
             'app_secret' => $this->fbConfig->getFBAppSecret(),
             'default_graph_version' => 'v2.9',
-            'persistent_data_handler'=> 'session'
+            'persistent_data_handler' => 'session'
           ]);
+
+          // var_dump($this->recent_post);
+          // die();
 
           // Sets the facebook post content to the WordPress Post Content
           $params = array(
             "message" => $this->recent_post[0]['post_content'],
+            "title" => $this->recent_post[0]['post_title'],
+            "description" => $this->recent_post[0]['post_content'],
             "link" => $this->postURL,
-            "object_attachment" => $this->postImage,
+            "picture" => $this->postImage,
           );
 
           $helper = $fb->getRedirectLoginHelper();
@@ -77,59 +82,6 @@ class Facebook_Post  {
           $response = $fb->post('/' . $_SESSION['fb_page_id'] . '/feed', $params, $pageToken);
           $graphNode = $response->getGraphNode();
 
-        //   try {
-        //       $token = $helper->getAccessToken();
-        //       if(isset($token)) {
-        //           $response = $fb->post('/' . $_SESSION['fb_page_id'] . '/feed', $params, $pageToken);
-        //           $graphNode = $response->getGraphNode();
-        //           echo 'Posted with id: ' . $graphNode['id'];
-        //       } else {
-        //           $permission = array('scope'=>'email, publish_actions,manage_pages, publish_pages');
-        //           echo "<a href='".$helper->getLoginUrl($url,$permission)."'>Click to post</a>";
-        //       }
-          //
-        //   }
-
-        //   catch (Facebook\Exceptions\FacebookSDKException $e) {
-        //         echo $e->getMessage();
-        // }
-
-        //     $url = 'https://graph.facebook.com/me/accounts?access_token='. $accessToken;
-        //     $ch = curl_init();
-        //     curl_setopt ($ch, CURLOPT_URL, $url);
-        //     curl_setopt ($ch, CURLOPT_CONNECTTIMEOUT, 5);
-        //     curl_setopt ($ch, CURLOPT_RETURNTRANSFER, true);
-        //     $contents = curl_exec($ch);
-        //     if (curl_errno($ch)) {
-        //       echo curl_error($ch);
-        //       echo "\n<br />";
-        //       $contents = '';
-        //     } else {
-        //       curl_close($ch);
-        //     }
-          //
-        //     if (!is_string($contents) || !strlen($contents)) {
-        //     echo "Failed to get contents.";
-        //     $contents = '';
-        //     }
-          //
-        //     // echo $contents;
-          //
-        //   $pageAccessToken = $contents->data[0]->access_token;
-
-        //   $posturl = '/'.$_SESSION['fb_page_id'].'/feed';
-        //   $result = $fb->post($posturl,$params,$pageAccessToken);
-        //   try {
-        //     $result = $fb->post($posturl,$params,$pageAccessToken);
-        //   } catch(Facebook\Exceptions\FacebookResponseException $e) {
-        //     // When Graph returns an error
-        //     echo 'Graph returned an error: ' . $e->getMessage();
-        //     exit;
-        //   } catch(Facebook\Exceptions\FacebookSDKException $e) {
-        //     // When validation fails or other local issues
-        //     echo 'Facebook SDK returned an error: ' . $e->getMessage();
-        //     exit;
-        //   }
         }
     }
 }
