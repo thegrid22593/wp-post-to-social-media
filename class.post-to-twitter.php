@@ -18,11 +18,12 @@ class Twitter_Post  {
   protected $allowPost;
   protected $twitterConfig;
 
-  public function __construct($recent_post, $postID, $postURL) {
+  public function __construct($recent_post, $postID, $postURL, $content) {
 
     $this->recent_post   = $recent_post;
     $this->postID        = $postID;
     $this->postURL       = $postURL;
+    $this->content       = $content;
     $this->twitterConfig = new P11_SOCIAL_CONFIG();
     if($this->twitterConfig->allowTwitterPost() == "1") {
       $this->post_tweet();
@@ -40,7 +41,7 @@ class Twitter_Post  {
     $twitter_settings = $this->config();
 
     // Brings the post content down to 140 characters for twitter standards if it is more than that.
-      $validTwitterContent = $this->truncate_content($this->recent_post[0]['post_content'], 140);
+      $validTwitterContent = $this->truncate_content($this->content, 140);
 
       $url = 'https://api.twitter.com/1.1/statuses/update.json';
       $requestMethod = 'POST';
@@ -58,7 +59,7 @@ class Twitter_Post  {
 
   /*
     *
-    * Truncates the content down to 140 characters if 
+    * Truncates the content down to 140 characters if
     * the post is longer than that to make it valid for twitter
     *
   */

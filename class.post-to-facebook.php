@@ -20,10 +20,11 @@ class Facebook_Post  {
     protected $postAllowed;
 
 
-    public function __construct($recent_post, $postID, $postURL, $postImage) {
+    public function __construct($recent_post, $postID, $postURL, $content, $postImage) {
         $this->recent_post = $recent_post;
         $this->postID = $postID;
         $this->postURL = $postURL;
+        $this->content = $content;
         $this->postImage = $postImage;
         $this->fbConfig = new P11_SOCIAL_CONFIG();
         if($this->fbConfig->allowFacebookPost() == "1") {
@@ -52,16 +53,16 @@ class Facebook_Post  {
             'persistent_data_handler' => 'session'
           ]);
 
-          // var_dump($this->recent_post);
-          // die();
+        //   var_dump($this->postImage);
+        //   die();
 
           // Sets the facebook post content to the WordPress Post Content
           $params = array(
-            "message" => $this->recent_post[0]['post_content'],
+            "message" => $this->content,
             "title" => $this->recent_post[0]['post_title'],
             "description" => $this->recent_post[0]['post_content'],
             "link" => $this->postURL,
-            "picture" => $this->postImage,
+            "picture" => $this->postImage
           );
 
           $helper = $fb->getRedirectLoginHelper();

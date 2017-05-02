@@ -279,6 +279,13 @@ public function set_globals() {
   } else if($_SESSION['fb_access_token'] == NULL && !get_option('facebook_access_token') ) {
     $this->fbIsAuthenticated = false;
   }
+
+  // Check for Twitter Authentication
+    if($_SESSION['twitter_oauth_access_token'] == "") {
+      $this->twitterIsAuthenticated = false;
+    } else {
+      $this->twitterIsAuthenticated = true;
+    }
 }
 
 /*
@@ -438,25 +445,25 @@ public function p11_social_settings_page() {
 
     if($pagenow == 'options-general.php' || $pagenow == 'post.php') {
       if( $this->fbIsAuthenticated ) {
-        $class = 'notice notice-success is-dismissible';
+        $class1 = 'notice notice-success is-dismissible';
         $message1 = __( 'Your are authorized with Facebook.', 'sample-text-domain' );
       } else {
-        $class = 'notice notice-error is-dismissible';
+        $class1 = 'notice notice-error is-dismissible';
         $message1 = __( 'Please authorize your Facebook App. <a href=""/>Log In</a>', 'sample-text-domain' );
       }
 
       if( $this->twitterIsAuthenticated ) {
-        $class = 'notice notice-success is-dismissible';
+        $class2 = 'notice notice-success is-dismissible';
         $message2 = __( 'You are authrorized with Twitter.', 'sample-text-domain' );
       } else {
-        $class = 'notice notice-error is-dismissible';
-        $message2 = __( 'Please authorize your Twitter App.', 'sample-text-domain' );
+        $class2 = 'notice notice-error is-dismissible';
+        $message2 = __( 'Please create your Twitter App. <a href="https://dev.twitter.com/web/sign-in" target="_blank">Log In</a>', 'sample-text-domain' );
       }
     }
-    
 
-	printf( '<div class="%1$s"><p>%2$s</p></div>', $class, $message1 );
-  printf( '<div class="%1$s"><p>%2$s</p></div>', $class, $message2 );
+
+	printf( '<div class="%1$s"><p>%2$s</p></div>', $class1, $message1 );
+  printf( '<div class="%1$s"><p>%2$s</p></div>', $class2, $message2 );
 }
 
   /*
@@ -482,22 +489,41 @@ public function p11_social_settings_page() {
       'suppress_filters' => true
     );
 
+    // Gets the recent post
     $recent_post = wp_get_recent_posts( $args, ARRAY_A );
 
     foreach ($recent_post as $post ) {
+      // Assign post content so that the wordpress data doesnt get tampered with
       $postID = $post['ID'];
       $postURL = $post['guid'];
+      $postContent = $post['post_content'];
+
+      // If there is a featured image get that / or gets the first image in the content / or default photo?...
       if( has_post_thumbnail() ) {
         $postImage = get_the_post_thumbnail_url();
+        $content = $this->check_for_image($postContent);
       } else {
-        $postImage;
+           preg_match('/<img.+src=[\'"](?P<src>.+?)[\'"].*>/i', $postContent, $image);
+          if(isset($image['src'])) :
+             $postImage = $image['src'];
+             // Remove the image from the content so there is no image html in the facebook / twitter post
+             $content = $this->check_for_image($postContent);
+          else :
+            // Make a default image if needed
+             $postImage = '';
+          endif;
       }
     }
+    
+    $post_to_twitter = new Twitter_Post($recent_post, $postID, $postURL, $content);
+    $post_to_facebook = new Facebook_Post($recent_post, $postID, $postURL, $content, $postImage);
 
-    // TODO: Add an option to allow people to check if they want to send posts then do a check here before posting
-    $post_to_twitter = new Twitter_Post($recent_post, $postID, $postURL);
-    $post_to_facebook = new Facebook_Post($recent_post, $postID, $postURL, $postImage);
+  }
 
+  // Returns content with no image tags
+  private function check_for_image($content) {
+    $noImage = preg_replace("/<img[^>]+\>/i", "", $content);
+    return $noImage;
   }
 
 }
