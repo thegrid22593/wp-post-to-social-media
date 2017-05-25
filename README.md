@@ -15,3 +15,5 @@ Quick and Easy WordPress Plugin that will take your last published post and post
 
 ## Future Features
 - LinkedIn
+- Google+
+- Instagram
